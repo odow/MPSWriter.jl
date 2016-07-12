@@ -15,6 +15,35 @@ facts("getrowsense") do
 end
 
 facts("writecolumns!") do
+    io = IOBuffer()
+
+    MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :Min)
+    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       1.0\n"
+
+    MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :Max)
+    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -1.0\n"
+
+    MPSWriter.writecolumns!(io, [0. 0.], [:Bin, :Cont], [3., 4.], :Max)
+    @fact takebuf_string(io) --> "COLUMNS\n    MARKER    'MARKER'                 'INTORG'\n    V1        OBJ       -3.0\n    MARKER    'MARKER'                 'INTEND'\n    V2        OBJ       -4.0\n"
+
+    MPSWriter.writecolumns!(io, [0. 0.], [:Fixed, :Int], [3., 4.], :Max)
+    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -3.0\n    MARKER    'MARKER'                 'INTORG'\n    V2        OBJ       -4.0\n    MARKER    'MARKER'                 'INTEND'\n"
+
+    @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :badsense)
+    @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:Cont, :Cont], [1.], :Min)
+    close(io)
+end
+
+facts("writecolumn!") do
+    for Aty in [SparseMatrixCSC{Float64, Int}, Array{Float64, 2}]
+        io = IOBuffer()
+        A = convert(Aty, [1. 0.; 1.5 0.4])
+        MPSWriter.writecolumn!(io, A, 1)
+        @fact takebuf_string(io) --> "    V1        C1        1.0\n    V1        C2        1.5\n"
+        MPSWriter.writecolumn!(io, A, 2)
+        @fact takebuf_string(io) --> "    V2        C2        0.4\n"
+        close(io)
+    end
 end
 
 facts("writerows!") do

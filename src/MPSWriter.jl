@@ -50,12 +50,11 @@ function writerows!(io::IO, row_sense::Vector{Symbol})
     end
 end
 
-function writecolumns!(io::IO, A, colcat, c::Vector, sense::Symbol)
+function writecolumns!{T}(io::IO, A::AbstractArray{T, 2}, colcat, c::Vector, sense::Symbol)
     @assert sense == :Min || sense == :Max
-    @assert length(colcat) == length(c)
+    @assert length(colcat) == length(c) == size(A)[2]
 
-    A = convert(SparseMatrixCSC{Float64, Int32}, A)
-    intgrpOPEN = false
+    integer_group = false
 
     println(io, "COLUMNS")
 
@@ -65,28 +64,40 @@ function writecolumns!(io::IO, A, colcat, c::Vector, sense::Symbol)
 	        if colty == :SemiCont || colty == :SemiInt
                 error("The MPS file writer does not currently support semicontinuous or semi-integer variables")
             end
-	        if (colty == :Bin || colty == :Int) && !_intgrpOPEN
+	        if (colty == :Bin || colty == :Int) && !integer_group
 	            println(io, "    MARKER    'MARKER'                 'INTORG'")
-	            _intgrpOPEN = true
-	        elseif (colty == :Cont || colty == :Fixed) && _intgrpOPEN
+	            integer_group = true
+	        elseif (colty == :Cont || colty == :Fixed) && integer_group
 	            println(io, "    MARKER    'MARKER'                 'INTEND'")
-	            _intgrpOPEN = false
+	            integer_group = false
 	        end
 	    end
     	if abs(c[col]) > 1e-10 # Non-zeros
     		# Flip signs for maximisation
             println(io, "    V$(rpad(col, 7))  $(rpad("OBJ", 8))  $((sense==:Max?-1:1)*c[col])")
 	    end
-        if length(A.colptr) > col
-            for ind in A.colptr[col]:(A.colptr[col+1]-1)
-            	if abs(A.nzval[ind]) > 1e-10 # Non-zero
-    	            println(io, "    V$(rpad(col, 7))  C$(rpad(A.rowval[ind], 7))  $(A.nzval[ind])")
-    	        end
+        writecolumn!(io, A, col)
+    end
+    if integer_group
+        println(io, "    MARKER    'MARKER'                 'INTEND'")
+    end
+end
+
+function writecolumn!(io::IO, A::SparseMatrixCSC, col::Int)
+    if length(A.colptr) > col
+        for ind in A.colptr[col]:(A.colptr[col+1]-1)
+            if abs(A.nzval[ind]) > 1e-10 # Non-zero
+                println(io, "    V$(rpad(col, 7))  C$(rpad(A.rowval[ind], 7))  $(A.nzval[ind])")
             end
         end
     end
-    if _intgrpOPEN
-        println(io, "    MARKER    'MARKER'                 'INTEND'")
+end
+
+function writecolumn!{T}(io::IO, A::Array{T, 2}, col::Int)
+    for row in 1:size(A)[1]
+        if abs(A[row, col]) > 1e-10 # Non-zero
+            println(io, "    V$(rpad(col, 7))  C$(rpad(row, 7))  $(A[row, col])")
+        end
     end
 end
 
