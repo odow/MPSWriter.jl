@@ -1,5 +1,7 @@
 module MPSWriter
 
+export writeMPS
+
 function getrowsense{T1 <: Real, T2<: Real}(rowlb::Vector{T1}, rowub::Vector{T2})
     @assert length(rowlb) == length(rowub)
     row_sense = Array(Symbol, length(rowub))
@@ -149,7 +151,7 @@ function addsos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
     end
 end
 
-function writeMPS(io::IO,
+function writemps(io::IO,
     A,                         # the constraint matrix
     collb::Vector,             # vector of variable lower bounds
     colub::Vector,             # vector of variable upper bounds
