@@ -76,4 +76,21 @@ facts("boundstring") do
     @fact MPSWriter.boundstring("UP", 100, 1.) --> " UP BOUNDS    V100      1.0"
 end
 
+facts("SOS") do
+    sos = SOS(1, [1,2,3], [1.,2.,3.])
+    @fact sos.order --> 1
+    @fact sos.indices --> [1,2,3]
+    @fact sos.weights --> [1., 2., 3.]
+
+    io = IOBuffer()
+    MPSWriter.writesos!(io, [SOS(1, [1,2,3], [1.,3.,2.]), SOS(2, [1,2,3], [2.,1.,3.])], 3)
+    s = takebuf_string(io)
+    @fact s --> "SOS\n S1 SOS1\n    V1        1.0\n    V2        3.0\n    V3        2.0\n S2 SOS2\n    V1        2.0\n    V2        1.0\n    V3        3.0\n"
+
+    @fact_throws MPSWriter.writesos!(io, [SOS(1, [1,2,3], [1.,2.,3.])], 2)
+    @fact_throws MPSWriter.writesos!(io, [SOS(1, [0,2,3], [1.,2.,3.])], 3)
+
+    close(io)
+end
+
 FactCheck.exitstatus()

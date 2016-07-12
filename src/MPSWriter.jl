@@ -1,6 +1,12 @@
 module MPSWriter
 
-export writeMPS
+export writeMPS, SOS
+
+immutable SOS
+    order::Int
+    indices::Vector{Int}
+    weights::Vector
+end
 
 function getrowsense{T1 <: Real, T2<: Real}(rowlb::Vector{T1}, rowub::Vector{T2})
     @assert length(rowlb) == length(rowub)
@@ -134,16 +140,11 @@ function boundstring(ty::ASCIIString, vidx::Int, val::Real)
     " $ty BOUNDS    V$(rpad(vidx, 7))  $(val)"
 end
 
-immutable SOS
-    order::Int
-    indices::Vector{Int}
-    weights::Vector
-end
-
-function addsos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
+function writesos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
+    println(io, "SOS")
     for i=1:length(sos)
         @assert length(sos[i].indices) == length(sos[i].weights)
-        println(io, "SOS\n S$(sos[i].order) SOS$(length(sos[i].indices))")
+        println(io, " S$(sos[i].order) SOS$i")
         for j=1:length(sos[i].indices)
             @assert sos[i].indices[j] > 0 && sos[i].indices[j] <= maxvarindex
             println(io, "    V$(rpad(sos[i].indices[j], 7))  $(sos[i].weights[j])")
@@ -176,16 +177,14 @@ function writemps(io::IO,
     @assert sense == :Min || sense == :Max
 
     println(io, "NAME          MPSWriter_jl")
-
     row_sense, hasranged = getrowsense(rowlb, rowub)
-
     writerows!(io, rowsense)
     writecolumns!(io, A, colcat, c, sense)
     if hasranged
         writeranges!(io, rowlb, rowub, row_sense)
     end
     writebounds!(io, collb, colub)
-    addsos!(io, sos, length(collb))
+    writesos!(io, sos, length(collb))
     println(io, "ENDATA")
 end
 
