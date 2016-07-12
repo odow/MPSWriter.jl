@@ -1,6 +1,6 @@
 module MPSWriter
 
-export writeMPS, SOS
+export writemps, SOS
 
 immutable SOS
     order::Int
@@ -50,6 +50,8 @@ function writerows!(io::IO, row_sense::Vector{Symbol})
     end
 end
 
+const SUPPORTEDVARIABLETYPES = [:Bin, :Int, :Cont, :Fixed]
+
 function writecolumns!{T}(io::IO, A::AbstractArray{T, 2}, colcat, c::Vector, sense::Symbol)
     @assert sense == :Min || sense == :Max
     @assert length(colcat) == length(c) == size(A)[2]
@@ -59,19 +61,17 @@ function writecolumns!{T}(io::IO, A::AbstractArray{T, 2}, colcat, c::Vector, sen
     println(io, "COLUMNS")
 
     for col in 1:length(c)
-    	if colcat != :nothing
-	        colty = colcat[col]
-	        if colty == :SemiCont || colty == :SemiInt
-                error("The MPS file writer does not currently support semicontinuous or semi-integer variables")
-            end
-	        if (colty == :Bin || colty == :Int) && !integer_group
-	            println(io, "    MARKER    'MARKER'                 'INTORG'")
-	            integer_group = true
-	        elseif (colty == :Cont || colty == :Fixed) && integer_group
-	            println(io, "    MARKER    'MARKER'                 'INTEND'")
-	            integer_group = false
-	        end
-	    end
+        colty = colcat[col]
+        if !(colty in SUPPORTEDVARIABLETYPES)
+            error("The MPS file writer does not currently support variables of the type $colty")
+        end
+        if (colty == :Bin || colty == :Int) && !integer_group
+            println(io, "    MARKER    'MARKER'                 'INTORG'")
+            integer_group = true
+        elseif (colty == :Cont || colty == :Fixed) && integer_group
+            println(io, "    MARKER    'MARKER'                 'INTEND'")
+            integer_group = false
+        end
     	if abs(c[col]) > 1e-10 # Non-zeros
     		# Flip signs for maximisation
             println(io, "    V$(rpad(col, 7))  $(rpad("OBJ", 8))  $((sense==:Max?-1:1)*c[col])")
@@ -189,7 +189,7 @@ function writemps(io::IO,
 
     println(io, "NAME          MPSWriter_jl")
     row_sense, hasranged = getrowsense(rowlb, rowub)
-    writerows!(io, rowsense)
+    writerows!(io, row_sense)
     writecolumns!(io, A, colcat, c, sense)
     if hasranged
         writeranges!(io, rowlb, rowub, row_sense)

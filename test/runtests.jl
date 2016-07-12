@@ -30,7 +30,9 @@ facts("writecolumns!") do
     @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -3.0\n    MARKER    'MARKER'                 'INTORG'\n    V2        OBJ       -4.0\n    MARKER    'MARKER'                 'INTEND'\n"
 
     @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :badsense)
+    @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:badtype], [1.], :Min)
     @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:Cont, :Cont], [1.], :Min)
+
     close(io)
 end
 
@@ -120,6 +122,50 @@ facts("SOS") do
     @fact_throws MPSWriter.writesos!(io, [SOS(1, [0,2,3], [1.,2.,3.])], 3)
 
     close(io)
+end
+
+facts("writemps") do
+const MPSFILE = """NAME          MPSWriter_jl
+ROWS
+ N  OBJ
+ L  C1
+ E  C2
+COLUMNS
+    V1        OBJ       -2.5
+    V1        C1        1.0
+    V1        C2        3.0
+    MARKER    'MARKER'                 'INTORG'
+    V2        OBJ       -3.5
+    V2        C1        2.0
+    V2        C2        4.0
+    MARKER    'MARKER'                 'INTEND'
+BOUNDS
+ UP BOUNDS    V1        2.0
+ MI BOUNDS    V1
+ PL BOUNDS    V2
+ LO BOUNDS    V2        -1.0
+SOS
+ S2 SOS1
+    V1        1.0
+    V2        2.0
+ENDATA
+"""
+
+    context("IOBuffer") do
+        io = IOBuffer()
+        writemps(io, [1. 2.; 3. 4.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1.], [4., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])])
+        @fact takebuf_string(io) --> MPSFILE
+        close(io)
+    end
+
+    context("File") do
+        tmpfile = tempname()
+        open(tmpfile, "w") do io
+            writemps(io, [1. 2.; 3. 4.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1.], [4., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])])
+        end
+        @fact readall(tmpfile) --> MPSFILE
+        rm(tmpfile)
+    end
 end
 
 FactCheck.exitstatus()
