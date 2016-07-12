@@ -114,7 +114,7 @@ function writeranges!(io::IO, rowlb, rowub, row_sense::Vector{Symbol})
     println(io, "RANGES")
     for r=1:length(row_sense)
         if row_sense[r] == :ranged
-            println(io, "    rhs       C$(rpad(r, 7))  $(rowub[r] - rowlb[r])")
+            println(io, "    RHS       C$(rpad(r, 7))  $(rowub[r] - rowlb[r])")
         end
     end
 end
@@ -197,22 +197,6 @@ function writemps(io::IO,
     writebounds!(io, collb, colub)
     writesos!(io, sos, length(collb))
     println(io, "ENDATA")
-end
-
-function writemps(filename::AbstractString,
-    A,                         # the constraint matrix
-    collb::Vector,             # vector of variable lower bounds
-    colub::Vector,             # vector of variable upper bounds
-    c::Vector,                 # vector containing variable objective coefficients
-    rowlb::Vector,             # constraint lower bounds
-    rowub::Vector,             # constraint upper bounds
-    sense::Symbol,             # model sense
-    colcat::Vector,            # constraint types
-    sos::Vector{SOS}=SOS[]     # SOS information
-)
-    open(filename, "w") do io
-        writemps(io, A, collb, colub, c, rowlb, rowub, sense, colcat, sos)
-    end
 end
 
 end # module

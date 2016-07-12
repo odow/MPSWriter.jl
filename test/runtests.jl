@@ -70,7 +70,7 @@ facts("writeranges!") do
     io = IOBuffer()
     MPSWriter.writeranges!(io, [-Inf, -2.5, 0., 1.], [1., 1., 1., 2.], [:(<=), :ranged, :ranged, :ranged])
     s = takebuf_string(io)
-    @fact s --> "RANGES\n    rhs       C2        3.5\n    rhs       C3        1.0\n    rhs       C4        1.0\n"
+    @fact s --> "RANGES\n    RHS       C2        3.5\n    RHS       C3        1.0\n    RHS       C4        1.0\n"
     close(io)
 end
 
@@ -130,15 +130,20 @@ ROWS
  N  OBJ
  L  C1
  E  C2
+ E  C3
 COLUMNS
     V1        OBJ       -2.5
     V1        C1        1.0
     V1        C2        3.0
+    V1        C3        5.0
     MARKER    'MARKER'                 'INTORG'
     V2        OBJ       -3.5
     V2        C1        2.0
     V2        C2        4.0
+    V2        C3        6.0
     MARKER    'MARKER'                 'INTEND'
+RANGES
+    RHS       C3        2.0
 BOUNDS
  UP BOUNDS    V1        2.0
  MI BOUNDS    V1
@@ -150,22 +155,10 @@ SOS
     V2        2.0
 ENDATA
 """
-
-    context("IOBuffer") do
-        io = IOBuffer()
-        writemps(io, [1. 2.; 3. 4.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1.], [4., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])])
-        @fact takebuf_string(io) --> MPSFILE
-        close(io)
-    end
-
-    context("File") do
-        tmpfile = tempname()
-        open(tmpfile, "w") do io
-            writemps(io, [1. 2.; 3. 4.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1.], [4., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])])
-        end
-        @fact readall(tmpfile) --> MPSFILE
-        rm(tmpfile)
-    end
+    io = IOBuffer()
+    writemps(io, [1. 2.; 3. 4.;5. 6.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1., -1.], [4., 1., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])])
+    @fact takebuf_string(io) --> MPSFILE
+    close(io)
 end
 
 FactCheck.exitstatus()
