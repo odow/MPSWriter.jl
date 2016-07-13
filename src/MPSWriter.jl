@@ -77,7 +77,7 @@ function writecolumns!{T}(io::IO, A::AbstractArray{T, 2}, colcat, c::Vector, sen
         inconstraint = writecolumn!(io, A, col)
     	if abs(c[col]) > 1e-10 || !inconstraint # Non-zeros
     		# Flip signs for maximisation
-            println(io, "    V$(rpad(col, 7))  $(rpad("OBJ", 8))  $((sense==:Max?-1:1)*c[col])")
+            _println(io, "    V$(rpad(col, 7))  $(rpad("OBJ", 8))  ", (sense==:Max?-1:1)*c[col])
 	    end
     end
     if integer_group
@@ -174,32 +174,29 @@ function writesos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
     end
 end
 
-function writequad!{T, Ti}(io::IO, Q::AbstractSparseArray{T, Ti, 2})
+function writequad!{T, Ti}(io::IO, Q::AbstractSparseArray{T, Ti, 2}, sense::Symbol)
+    @assert sense == :Min || sense == :Max
     println(io, "QMATRIX")
     rows = rowvals(Q)
     vals = nonzeros(Q)
+    if sense == :Max
+        vals *= -1
+    end
     for i = 1:size(Q)[2]
         for j in nzrange(Q, i)
-            row = rows[j]
-            if i==row # diagonal
-                _println(io, "    V$(rpad(row,7)) V$(rpad(i,7))  ", 2 * vals[j])
-            else
-                _println(io, "    V$(rpad(row,7)) V$(rpad(i,7))  ",     vals[j])
-            end
+            _println(io, "    V$(rpad(rows[j],7)) V$(rpad(i,7))  ", vals[j])
         end
     end
 end
 
-function writequad!{T}(io::IO, Q::AbstractArray{T, 2})
+function writequad!{T}(io::IO, Q::AbstractArray{T, 2}, sense::Symbol)
+    @assert sense == :Min || sense == :Max
+    sgn = (sense == :Max?-1:1)
     println(io, "QMATRIX")
     for i = 1:size(Q)[2]
         for j in 1:size(Q)[1]
             if abs(Q[j, i]) > 1e-10
-                if i==j # diagonal
-                    _println(io, "    V$(rpad(j,7)) V$(rpad(i,7))  ", 2 * Q[j, i])
-                else
-                    _println(io, "    V$(rpad(j,7)) V$(rpad(i,7))  ",     Q[j, i])
-                end
+                _println(io, "    V$(rpad(j,7)) V$(rpad(i,7))  ", sgn*Q[j, i])
             end
         end
     end
@@ -215,7 +212,7 @@ function writemps{T1, T2}(io::IO,
     sense::Symbol,             # model sense
     colcat::Vector,            # constraint types
     sos::Vector{SOS},          # SOS information
-    Q::AbstractArray{T2, 2}, #  Quadratic objectives x' Q x
+    Q::AbstractArray{T2, 2}, #  Quadratic objectives 0.5 * x' Q x
     modelname::AbstractString="MPSWriter_jl"  # MPS model name
 )
     # Max width (8) for names in fixed MPS format
@@ -244,7 +241,7 @@ function writemps{T1, T2}(io::IO,
         writesos!(io, sos, length(collb))
     end
     if length(Q) > 0
-        writequad!(io, Q)
+        writequad!(io, Q, sense)
     end
     println(io, "ENDATA")
 end

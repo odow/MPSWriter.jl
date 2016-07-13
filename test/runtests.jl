@@ -18,16 +18,16 @@ facts("writecolumns!") do
     io = IOBuffer()
 
     MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :Min)
-    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       1.0\n"
+    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       1\n"
 
     MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :Max)
-    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -1.0\n"
+    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -1\n"
 
     MPSWriter.writecolumns!(io, [0. 0.], [:Bin, :Cont], [3., 4.], :Max)
-    @fact takebuf_string(io) --> "COLUMNS\n    MARKER    'MARKER'                 'INTORG'\n    V1        OBJ       -3.0\n    MARKER    'MARKER'                 'INTEND'\n    V2        OBJ       -4.0\n"
+    @fact takebuf_string(io) --> "COLUMNS\n    MARKER    'MARKER'                 'INTORG'\n    V1        OBJ       -3\n    MARKER    'MARKER'                 'INTEND'\n    V2        OBJ       -4\n"
 
     MPSWriter.writecolumns!(io, [0. 0.], [:Fixed, :Int], [3., 4.], :Max)
-    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -3.0\n    MARKER    'MARKER'                 'INTORG'\n    V2        OBJ       -4.0\n    MARKER    'MARKER'                 'INTEND'\n"
+    @fact takebuf_string(io) --> "COLUMNS\n    V1        OBJ       -3\n    MARKER    'MARKER'                 'INTORG'\n    V2        OBJ       -4\n    MARKER    'MARKER'                 'INTEND'\n"
 
     @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:Cont], [1.], :badsense)
     @fact_throws MPSWriter.writecolumns!(io, [0. 0.]', [:badtype], [1.], :Min)
@@ -137,10 +137,10 @@ end
 
 facts("Quad") do
     io = IOBuffer()
-    MPSWriter.writequad!(io, sparse([1, 1, 2, 1], [1, 2, 2, 1], [0.5, 1.5, 1, 0.5]))
-    @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        2\n    V1       V2        1.5\n    V2       V2        2\n"
-    MPSWriter.writequad!(io, [0.75 0;1.4 1])
-    @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        1.5\n    V2       V1        1.4\n    V2       V2        2\n"
+    MPSWriter.writequad!(io, sparse([1, 1, 2, 1], [1, 2, 2, 1], [0.5, 1.5, 1, 0.5]), :Min)
+    @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        1\n    V1       V2        1.5\n    V2       V2        1\n"
+    MPSWriter.writequad!(io, [1.75 0;1.4 1], :Max)
+    @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        -1.75\n    V2       V1        -1.4\n    V2       V2        -1\n"
     close(io)
 end
 
@@ -148,74 +148,73 @@ facts("writemps") do
 const MPSFILE = """NAME          TestModel
 ROWS
  N  OBJ
- L  C1
+ G  C1
  G  C2
  E  C3
  E  C4
- E  C5
 COLUMNS
     V1        C1        1
-    V1        OBJ       -1
     V2        C2        1
     V3        C3        1
-    V4        C4        1
-    V4        OBJ       -1
     MARKER    'MARKER'                 'INTORG'
-    V5        OBJ       1
+    V4        OBJ       1
     MARKER    'MARKER'                 'INTEND'
-    V6        C5        1
-    V7        C5        1
-    V8        C5        1
+    V5        C4        1
+    V5        OBJ       -1
+    V6        C4        1
+    V7        C4        1
     MARKER    'MARKER'                 'INTORG'
-    V9        OBJ       0
+    V8        OBJ       0
     MARKER    'MARKER'                 'INTEND'
 RHS
-    rhs       C1        1
+    rhs       C1        0
     rhs       C2        2
-    rhs       C3        3
-    rhs       C4        4
-    rhs       C5        1
-RANGES
+    rhs       C3        1
     rhs       C4        1
+RANGES
+    rhs       C3        1.5
 BOUNDS
- FR BOUNDS    V1
- FR BOUNDS    V2
- FR BOUNDS    V3
- FR BOUNDS    V4
- PL BOUNDS    V5
- LO BOUNDS    V5        5.5
+ UP BOUNDS    V1        3
+ MI BOUNDS    V1
+ UP BOUNDS    V2        3
+ MI BOUNDS    V2
+ UP BOUNDS    V3        3
+ MI BOUNDS    V3
+ PL BOUNDS    V4
+ LO BOUNDS    V4        5.5
+ UP BOUNDS    V5        1
  UP BOUNDS    V6        1
  UP BOUNDS    V7        1
  UP BOUNDS    V8        1
- UP BOUNDS    V9        1
 SOS
  S2 SOS1
-    V6        1
-    V7        2
-    V8        3
+    V5        1
+    V6        2
+    V7        3
 QMATRIX
     V1       V1        2
-    V1       V2        1.5
+    V2       V1        -1.1
+    V1       V2        -1.1
+    V2       V2        2
 ENDATA
 """
     io = IOBuffer()
     writemps(io,
     [
-    1 0 0 0 0 0 0 0 0;
-    0 1 0 0 0 0 0 0 0;
-    0 0 1 0 0 0 0 0 0;
-    0 0 0 1 0 0 0 0 0;
-    0 0 0 0 0 1 1 1 0
+    1 0 0 0 0 0 0 0;
+    0 1 0 0 0 0 0 0;
+    0 0 1 0 0 0 0 0;
+    0 0 0 0 1 1 1 0
     ],
-    [-Inf, -Inf, -Inf, -Inf, 5.5, 0, 0, 0, 0],
-    [Inf, Inf, Inf, Inf, Inf, 1, 1, 1, 1],
-    [1,0,0,1,-1,0,0,0,0],
-    [-Inf, 2, 3, 4, 1],
-    [1, Inf, 3, 5, 1],
+    [-Inf, -Inf, -Inf, 5.5, 0, 0, 0, 0],
+    [3, 3, 3, Inf, 1, 1, 1, 1],
+    [0,0,0,-1,1,0,0,0],
+    [0, 2, 1, 1],
+    [Inf, Inf, 2.5, 1],
     :Max,
-    [:Cont, :Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
-    SOS[SOS(2, [6,7,8], [1,2,3])],
-    sparse(Int[1, 1], Int[1, 2], Float64[1., 1.5]),
+    [:Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
+    SOS[SOS(2, [5,6,7], [1,2,3])],
+    [-2 1.1;1.1 -2],
     "TestModel"
     )
     @fact takebuf_string(io) --> MPSFILE
@@ -223,3 +222,24 @@ ENDATA
 end
 
 FactCheck.exitstatus()
+open("C:/temp/b.mps", "w") do io
+writemps(io,
+[
+1 0 0 0 0 0 0 0;
+0 1 0 0 0 0 0 0;
+0 0 1 0 0 0 0 0;
+0 0 0 0 0 0 0 0;
+0 0 0 0 1 1 1 0
+],
+[-Inf, -Inf, -Inf, 5.5, 0, 0, 0, 0],
+[3, 3, 3, Inf, 1, 1, 1, 1],
+[0,0,0,-1,1,0,0,0],
+[0.5, 2, 1, 1],
+[Inf, Inf, 2.5, 1],
+:Max,
+[:Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
+SOS[SOS(2, [5,6,7], [1,2,3])],
+[-2 1.1;1.1 -2],
+"TestModel"
+)
+end
