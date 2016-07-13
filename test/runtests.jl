@@ -39,11 +39,11 @@ end
 facts("writecolumn!") do
     for Aty in [SparseMatrixCSC{Float64, Int}, Array{Float64, 2}]
         io = IOBuffer()
-        A = convert(Aty, [1. 0.; 1.5 0.4])
+        A = convert(Aty, [1. 0.; 1.5 1.4])
         MPSWriter.writecolumn!(io, A, 1)
         @fact takebuf_string(io) --> "    V1        C1        1\n    V1        C2        1.5\n"
         MPSWriter.writecolumn!(io, A, 2)
-        @fact takebuf_string(io) --> "    V2        C2        .4\n"
+        @fact takebuf_string(io) --> "    V2        C2        1.4\n"
         close(io)
     end
 end
@@ -90,7 +90,7 @@ facts("writebounds!") do
     close(io)
 end
 
-facts("boundstring") do
+facts("writebound!") do
     io = IOBuffer()
     MPSWriter. writebound!(io, "FR", 1)
     @fact takebuf_string(io) --> " FR BOUNDS    V1\n"
@@ -132,6 +132,13 @@ facts("SOS") do
     @fact_throws MPSWriter.writesos!(io, [SOS(1, [1,2,3], [1.,2.,3.])], 2)
     @fact_throws MPSWriter.writesos!(io, [SOS(1, [0,2,3], [1.,2.,3.])], 3)
 
+    close(io)
+end
+
+facts("Quad") do
+    io = IOBuffer()
+    MPSWriter.writequad!(io, sparse([1, 1, 2, 1], [1, 2, 2, 1], [0.5, 1.5, 1, 0.5]))
+    @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        2\n    V1       V2        1.5\n    V2       V2        2\n"
     close(io)
 end
 
@@ -184,6 +191,9 @@ SOS
     V6        1
     V7        2
     V8        3
+QMATRIX
+    V1       V1        2
+    V1       V2        1.5
 ENDATA
 """
     io = IOBuffer()
@@ -203,6 +213,7 @@ ENDATA
     :Max,
     [:Cont, :Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
     SOS[SOS(2, [6,7,8], [1,2,3])],
+    sparse(Int[1, 1], Int[1, 2], Float64[1., 1.5]),
     "TestModel"
     )
     @fact takebuf_string(io) --> MPSFILE

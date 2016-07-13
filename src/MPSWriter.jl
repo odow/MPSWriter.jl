@@ -91,15 +91,12 @@ function _println(io::IO, s::AbstractString, x::Number)
     println(io)
 end
 
-function writecolumn!(io::IO, A::SparseMatrixCSC, col::Int)
+function writecolumn!{T, Ti}(io::IO, A::AbstractSparseArray{T, Ti, 2}, col::Int)
     inconstraint = false
-    if length(A.colptr) > col
-        for ind in A.colptr[col]:(A.colptr[col+1]-1)
-            if abs(A.nzval[ind]) > 1e-10 # Non-zero
-                _println(io, "    V$(rpad(col, 7))  C$(rpad(A.rowval[ind], 7))  ", A.nzval[ind])
-                inconstraint = true
-            end
-        end
+    rows, vals = rowvals(A), nonzeros(A)
+    for j in nzrange(A, col)
+        _println(io, "    V$(rpad(col, 7))  C$(rpad(rows[j], 7))  ", vals[j])
+        inconstraint = true
     end
     inconstraint
 end
@@ -177,7 +174,23 @@ function writesos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
     end
 end
 
-function writemps(io::IO,
+function writequad!{T, Ti}(io::IO, Q::AbstractSparseArray{T, Ti, 2})
+    println(io, "QMATRIX")
+    rows = rowvals(Q)
+    vals = nonzeros(Q)
+    for i = 1:size(Q)[2]
+        for j in nzrange(Q, i)
+            row = rows[j]
+            if i==row # diagonal
+                _println(io, "    V$(rpad(row,7)) V$(rpad(i,7))  ", 2 * vals[j])
+            else
+                _println(io, "    V$(rpad(row,7)) V$(rpad(i,7))  ",     vals[j])
+            end
+        end
+    end
+end
+
+function writemps{T, Ti}(io::IO,
     A,                         # the constraint matrix
     collb::Vector,             # vector of variable lower bounds
     colub::Vector,             # vector of variable upper bounds
@@ -186,7 +199,8 @@ function writemps(io::IO,
     rowub::Vector,             # constraint upper bounds
     sense::Symbol,             # model sense
     colcat::Vector,            # constraint types
-    sos::Vector{SOS}=SOS[],    # SOS information
+    sos::Vector{SOS},          # SOS information
+    Q::AbstractSparseArray{T, Ti, 2}, #  Quadratic objectives x' Q x
     modelname::AbstractString="MPSWriter_jl"  # MPS model name
 )
     # Max width (8) for names in fixed MPS format
@@ -211,7 +225,8 @@ function writemps(io::IO,
         writeranges!(io, rowlb, rowub, row_sense)
     end
     writebounds!(io, collb, colub)
-    writesos!(io, sos, length(collb))
+    length(sos) > 0 && writesos!(io, sos, length(collb))
+    length(Q) > 0 && writequad!(io, Q)
     println(io, "ENDATA")
 end
 
