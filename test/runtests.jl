@@ -41,9 +41,9 @@ facts("writecolumn!") do
         io = IOBuffer()
         A = convert(Aty, [1. 0.; 1.5 0.4])
         MPSWriter.writecolumn!(io, A, 1)
-        @fact takebuf_string(io) --> "    V1        C1        1.0\n    V1        C2        1.5\n"
+        @fact takebuf_string(io) --> "    V1        C1        1\n    V1        C2        1.5\n"
         MPSWriter.writecolumn!(io, A, 2)
-        @fact takebuf_string(io) --> "    V2        C2        0.4\n"
+        @fact takebuf_string(io) --> "    V2        C2        .4\n"
         close(io)
     end
 end
@@ -61,7 +61,7 @@ facts("writerhs!") do
     io = IOBuffer()
     MPSWriter.writerhs!(io, [-Inf, -1., 0., 0.], [0., 1., 0., Inf], [:(<=), :ranged, :(==), :(>=)])
     s = takebuf_string(io)
-    @fact s --> "RHS\n    rhs       C1        0.0\n    rhs       C2        -1.0\n    rhs       C3        0.0\n    rhs       C4        0.0\n"
+    @fact s --> "RHS\n    rhs       C1        0\n    rhs       C2        -1\n    rhs       C3        0\n    rhs       C4        0\n"
     @fact_throws MPSWriter.writeMPS!(io, [-Inf], [0., 1], [:(<=), :(==)])
     close(io)
 end
@@ -70,7 +70,7 @@ facts("writeranges!") do
     io = IOBuffer()
     MPSWriter.writeranges!(io, [-Inf, -2.5, 0., 1.], [1., 1., 1., 2.], [:(<=), :ranged, :ranged, :ranged])
     s = takebuf_string(io)
-    @fact s --> "RANGES\n    RHS       C2        3.5\n    RHS       C3        1.0\n    RHS       C4        1.0\n"
+    @fact s --> "RANGES\n    RHS       C2        3.5\n    RHS       C3        1\n    RHS       C4        1\n"
     close(io)
 end
 
@@ -85,26 +85,37 @@ facts("writebounds!") do
 
     s = takebuf_string(io)
 
-    @fact s --> "BOUNDS\n FR BOUNDS    V1\n PL BOUNDS    V2\n LO BOUNDS    V2        1.0\n PL BOUNDS    V3\n UP BOUNDS    V4        0.0\n MI BOUNDS    V4\n"
+    @fact s --> "BOUNDS\n FR BOUNDS    V1\n PL BOUNDS    V2\n LO BOUNDS    V2        1\n PL BOUNDS    V3\n UP BOUNDS    V4        0\n MI BOUNDS    V4\n"
     @fact_throws MPSWriter.writebounds!(io, [-Inf], [Inf, 0.])
     close(io)
 end
 
 facts("boundstring") do
-    @fact MPSWriter.boundstring("FR", 1) --> " FR BOUNDS    V1"
-    @fact MPSWriter.boundstring("MI", 1) --> " MI BOUNDS    V1"
-    @fact MPSWriter.boundstring("PL", 1) --> " PL BOUNDS    V1"
-    @fact_throws MPSWriter.boundstring("LO", 1)
-    @fact_throws MPSWriter.boundstring("UP", 1)
-    @fact_throws MPSWriter.boundstring("badstring", 1)
-    @fact_throws MPSWriter.boundstring("FR", 1, 1.)
-    @fact_throws MPSWriter.boundstring("MI", 1, 1.)
-    @fact_throws MPSWriter.boundstring("PL", 1, 1.)
-    @fact_throws MPSWriter.boundstring("badstring", 1)
-    @fact MPSWriter.boundstring("LO", 1, 1.) --> " LO BOUNDS    V1        1.0"
-    @fact MPSWriter.boundstring("UP", 1, 1.) --> " UP BOUNDS    V1        1.0"
-    @fact MPSWriter.boundstring("LO", 100, 1.) --> " LO BOUNDS    V100      1.0"
-    @fact MPSWriter.boundstring("UP", 100, 1.) --> " UP BOUNDS    V100      1.0"
+    io = IOBuffer()
+    MPSWriter. writebound!(io, "FR", 1)
+    @fact takebuf_string(io) --> " FR BOUNDS    V1\n"
+    MPSWriter. writebound!(io, "MI", 1)
+    @fact takebuf_string(io) --> " MI BOUNDS    V1\n"
+    MPSWriter. writebound!(io, "PL", 1)
+    @fact takebuf_string(io) --> " PL BOUNDS    V1\n"
+
+    @fact_throws MPSWriter. writebound!(io, "LO", 1)
+    @fact_throws MPSWriter. writebound!(io, "UP", 1)
+    @fact_throws MPSWriter. writebound!(io, "badstring", 1)
+    @fact_throws MPSWriter. writebound!(io, "FR", 1, 1.)
+    @fact_throws MPSWriter. writebound!(io, "MI", 1, 1.)
+    @fact_throws MPSWriter. writebound!(io, "PL", 1, 1.)
+    @fact_throws MPSWriter. writebound!(io, "badstring", 1)
+
+    MPSWriter. writebound!(io, "LO", 1, 1.)
+    @fact takebuf_string(io) --> " LO BOUNDS    V1        1\n"
+    MPSWriter. writebound!(io, "UP", 1, 1.)
+    @fact takebuf_string(io) --> " UP BOUNDS    V1        1\n"
+    MPSWriter. writebound!(io, "LO", 100, 1.)
+    @fact takebuf_string(io) --> " LO BOUNDS    V100      1\n"
+    MPSWriter. writebound!(io, "UP", 100, 1.)
+    @fact takebuf_string(io) --> " UP BOUNDS    V100      1\n"
+    close(io)
 end
 
 facts("SOS") do
@@ -116,7 +127,7 @@ facts("SOS") do
     io = IOBuffer()
     MPSWriter.writesos!(io, [SOS(1, [1,2,3], [1.,3.,2.]), SOS(2, [1,2,3], [2.,1.,3.])], 3)
     s = takebuf_string(io)
-    @fact s --> "SOS\n S1 SOS1\n    V1        1.0\n    V2        3.0\n    V3        2.0\n S2 SOS2\n    V1        2.0\n    V2        1.0\n    V3        3.0\n"
+    @fact s --> "SOS\n S1 SOS1\n    V1        1\n    V2        3\n    V3        2\n S2 SOS2\n    V1        2\n    V2        1\n    V3        3\n"
 
     @fact_throws MPSWriter.writesos!(io, [SOS(1, [1,2,3], [1.,2.,3.])], 2)
     @fact_throws MPSWriter.writesos!(io, [SOS(1, [0,2,3], [1.,2.,3.])], 3)
@@ -125,7 +136,7 @@ facts("SOS") do
 end
 
 facts("writemps") do
-const MPSFILE = """NAME          MPSWriter_jl
+const MPSFILE = """NAME          TestModel
 ROWS
  N  OBJ
  L  C1
@@ -133,30 +144,30 @@ ROWS
  E  C3
 COLUMNS
     V1        OBJ       -2.5
-    V1        C1        1.0
-    V1        C2        3.0
-    V1        C3        5.0
+    V1        C1        1
+    V1        C2        3
+    V1        C3        5
     MARKER    'MARKER'                 'INTORG'
     V2        OBJ       -3.5
-    V2        C1        2.0
-    V2        C2        4.0
-    V2        C3        6.0
+    V2        C1        2
+    V2        C2        4
+    V2        C3        6
     MARKER    'MARKER'                 'INTEND'
 RANGES
-    RHS       C3        2.0
+    RHS       C3        2
 BOUNDS
- UP BOUNDS    V1        2.0
+ UP BOUNDS    V1        2
  MI BOUNDS    V1
  PL BOUNDS    V2
- LO BOUNDS    V2        -1.0
+ LO BOUNDS    V2        -1
 SOS
  S2 SOS1
-    V1        1.0
-    V2        2.0
+    V1        1
+    V2        2
 ENDATA
 """
     io = IOBuffer()
-    writemps(io, [1. 2.; 3. 4.;5. 6.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1., -1.], [4., 1., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])])
+    writemps(io, [1. 2.; 3. 4.;5. 6.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1., -1.], [4., 1., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])], "TestModel")
     @fact takebuf_string(io) --> MPSFILE
     close(io)
 end

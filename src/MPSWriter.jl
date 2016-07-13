@@ -83,11 +83,17 @@ function writecolumns!{T}(io::IO, A::AbstractArray{T, 2}, colcat, c::Vector, sen
     end
 end
 
+function _println(io::IO, s::AbstractString, x::Number)
+    print(io, s)
+    print_shortest(io, x)
+    println(io)
+end
+
 function writecolumn!(io::IO, A::SparseMatrixCSC, col::Int)
     if length(A.colptr) > col
         for ind in A.colptr[col]:(A.colptr[col+1]-1)
             if abs(A.nzval[ind]) > 1e-10 # Non-zero
-                println(io, "    V$(rpad(col, 7))  C$(rpad(A.rowval[ind], 7))  $(A.nzval[ind])")
+                _println(io, "    V$(rpad(col, 7))  C$(rpad(A.rowval[ind], 7))  ", A.nzval[ind])
             end
         end
     end
@@ -96,7 +102,7 @@ end
 function writecolumn!{T}(io::IO, A::Array{T, 2}, col::Int)
     for row in 1:size(A)[1]
         if abs(A[row, col]) > 1e-10 # Non-zero
-            println(io, "    V$(rpad(col, 7))  C$(rpad(row, 7))  $(A[row, col])")
+            _println(io, "    V$(rpad(col, 7))  C$(rpad(row, 7))  ", A[row, col])
         end
     end
 end
@@ -105,7 +111,7 @@ function writerhs!(io::IO, rowlb, rowub, row_sense::Vector{Symbol})
     @assert length(rowlb) == length(rowub) == length(row_sense)
     println(io, "RHS")
     for c in 1:length(rowlb)
-        println(io, "    rhs       C$(rpad(c, 7))  $(row_sense[c] == :(<=)?rowub[c]:rowlb[c])")
+        _println(io, "    rhs       C$(rpad(c, 7))  ", row_sense[c] == :(<=)?rowub[c]:rowlb[c])
     end
 end
 
@@ -114,7 +120,7 @@ function writeranges!(io::IO, rowlb, rowub, row_sense::Vector{Symbol})
     println(io, "RANGES")
     for r=1:length(row_sense)
         if row_sense[r] == :ranged
-            println(io, "    RHS       C$(rpad(r, 7))  $(rowub[r] - rowlb[r])")
+            _println(io, "    RHS       C$(rpad(r, 7))  ", rowub[r] - rowlb[r])
         end
     end
 end
@@ -125,30 +131,30 @@ function writebounds!(io::IO, collb, colub)
     for col in 1:length(collb)
         if colub[col] == Inf
             if collb[col] == -Inf
-                println(io, boundstring("FR", col))
+                writebound!(io, "FR", col)
                 continue
             else
-                println(io, boundstring("PL", col))
+                writebound!(io, "PL", col)
             end
         else
-            println(io, boundstring("UP", col, colub[col]))
+            writebound!(io, "UP", col, colub[col])
         end
         if collb[col] == -Inf
-            println(io, boundstring("MI", col))
+            writebound!(io, "MI", col)
         elseif collb[col] != 0
-            println(io, boundstring("LO", col, collb[col]))
+            writebound!(io, "LO", col, collb[col])
         end
     end
 end
 
-function boundstring(ty::ASCIIString, vidx::Int)
+function writebound!(io::IO, ty::AbstractString, vidx::Int)
     @assert ty in ["FR", "MI", "PL"]
-    " $ty BOUNDS    V$vidx"
+    println(io, " $ty BOUNDS    V$vidx")
 end
 
-function boundstring(ty::ASCIIString, vidx::Int, val::Real)
+function writebound!(io::IO, ty::AbstractString, vidx::Int, val::Real)
     @assert ty in ["LO", "UP"]
-    " $ty BOUNDS    V$(rpad(vidx, 7))  $(val)"
+    _println(io, " $ty BOUNDS    V$(rpad(vidx, 7))  ", val)
 end
 
 function writesos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
@@ -158,7 +164,7 @@ function writesos!(io::IO, sos::Vector{SOS}, maxvarindex::Int)
         println(io, " S$(sos[i].order) SOS$i")
         for j=1:length(sos[i].indices)
             @assert sos[i].indices[j] > 0 && sos[i].indices[j] <= maxvarindex
-            println(io, "    V$(rpad(sos[i].indices[j], 7))  $(sos[i].weights[j])")
+            _println(io, "    V$(rpad(sos[i].indices[j], 7))  ", sos[i].weights[j])
         end
     end
 end
@@ -172,7 +178,8 @@ function writemps(io::IO,
     rowub::Vector,             # constraint upper bounds
     sense::Symbol,             # model sense
     colcat::Vector,            # constraint types
-    sos::Vector{SOS}=SOS[]     # SOS information
+    sos::Vector{SOS}=SOS[],    # SOS information
+    modelname::AbstractString="MPSWriter_jl"  # MPS model name
 )
     # Max width (8) for names in fixed MPS format
     # TODO: replace names by alpha-numeric
@@ -187,7 +194,7 @@ function writemps(io::IO,
     @assert length(collb) == length(colub) == length(c) == length(colcat)
     @assert sense == :Min || sense == :Max
 
-    println(io, "NAME          MPSWriter_jl")
+    println(io, "NAME          $modelname")
     row_sense, hasranged = getrowsense(rowlb, rowub)
     writerows!(io, row_sense)
     writecolumns!(io, A, colcat, c, sense)
