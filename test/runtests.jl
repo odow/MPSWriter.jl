@@ -222,24 +222,3 @@ ENDATA
 end
 
 FactCheck.exitstatus()
-open("C:/temp/b.mps", "w") do io
-writemps(io,
-[
-1 0 0 0 0 0 0 0;
-0 1 0 0 0 0 0 0;
-0 0 1 0 0 0 0 0;
-0 0 0 0 0 0 0 0;
-0 0 0 0 1 1 1 0
-],
-[-Inf, -Inf, -Inf, 5.5, 0, 0, 0, 0],
-[3, 3, 3, Inf, 1, 1, 1, 1],
-[0,0,0,-1,1,0,0,0],
-[0.5, 2, 1, 1],
-[Inf, Inf, 2.5, 1],
-:Max,
-[:Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
-SOS[SOS(2, [5,6,7], [1,2,3])],
-[-2 1.1;1.1 -2],
-"TestModel"
-)
-end
