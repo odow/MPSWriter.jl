@@ -1,3 +1,5 @@
+__precompile__()
+
 module MPSWriter
 
 export writemps, SOS
@@ -72,11 +74,11 @@ function writecolumns!{T}(io::IO, A::AbstractArray{T, 2}, colcat, c::Vector, sen
             println(io, "    MARKER    'MARKER'                 'INTEND'")
             integer_group = false
         end
-    	if abs(c[col]) > 1e-10 # Non-zeros
+        inconstraint = writecolumn!(io, A, col)
+    	if abs(c[col]) > 1e-10 || !inconstraint # Non-zeros
     		# Flip signs for maximisation
             println(io, "    V$(rpad(col, 7))  $(rpad("OBJ", 8))  $((sense==:Max?-1:1)*c[col])")
 	    end
-        writecolumn!(io, A, col)
     end
     if integer_group
         println(io, "    MARKER    'MARKER'                 'INTEND'")
@@ -90,21 +92,27 @@ function _println(io::IO, s::AbstractString, x::Number)
 end
 
 function writecolumn!(io::IO, A::SparseMatrixCSC, col::Int)
+    inconstraint = false
     if length(A.colptr) > col
         for ind in A.colptr[col]:(A.colptr[col+1]-1)
             if abs(A.nzval[ind]) > 1e-10 # Non-zero
                 _println(io, "    V$(rpad(col, 7))  C$(rpad(A.rowval[ind], 7))  ", A.nzval[ind])
+                inconstraint = true
             end
         end
     end
+    inconstraint
 end
 
 function writecolumn!{T}(io::IO, A::Array{T, 2}, col::Int)
+    inconstraint = false
     for row in 1:size(A)[1]
         if abs(A[row, col]) > 1e-10 # Non-zero
             _println(io, "    V$(rpad(col, 7))  C$(rpad(row, 7))  ", A[row, col])
+            inconstraint = true
         end
     end
+    inconstraint
 end
 
 function writerhs!(io::IO, rowlb, rowub, row_sense::Vector{Symbol})
@@ -120,7 +128,7 @@ function writeranges!(io::IO, rowlb, rowub, row_sense::Vector{Symbol})
     println(io, "RANGES")
     for r=1:length(row_sense)
         if row_sense[r] == :ranged
-            _println(io, "    RHS       C$(rpad(r, 7))  ", rowub[r] - rowlb[r])
+            _println(io, "    rhs       C$(rpad(r, 7))  ", rowub[r] - rowlb[r])
         end
     end
 end
@@ -198,6 +206,7 @@ function writemps(io::IO,
     row_sense, hasranged = getrowsense(rowlb, rowub)
     writerows!(io, row_sense)
     writecolumns!(io, A, colcat, c, sense)
+    writerhs!(io, rowlb, rowub, row_sense)
     if hasranged
         writeranges!(io, rowlb, rowub, row_sense)
     end

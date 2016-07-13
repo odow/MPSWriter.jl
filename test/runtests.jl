@@ -70,7 +70,7 @@ facts("writeranges!") do
     io = IOBuffer()
     MPSWriter.writeranges!(io, [-Inf, -2.5, 0., 1.], [1., 1., 1., 2.], [:(<=), :ranged, :ranged, :ranged])
     s = takebuf_string(io)
-    @fact s --> "RANGES\n    RHS       C2        3.5\n    RHS       C3        1\n    RHS       C4        1\n"
+    @fact s --> "RANGES\n    rhs       C2        3.5\n    rhs       C3        1\n    rhs       C4        1\n"
     close(io)
 end
 
@@ -140,34 +140,71 @@ const MPSFILE = """NAME          TestModel
 ROWS
  N  OBJ
  L  C1
- E  C2
+ G  C2
  E  C3
+ E  C4
+ E  C5
 COLUMNS
-    V1        OBJ       -2.5
     V1        C1        1
-    V1        C2        3
-    V1        C3        5
+    V1        OBJ       -1
+    V2        C2        1
+    V3        C3        1
+    V4        C4        1
+    V4        OBJ       -1
     MARKER    'MARKER'                 'INTORG'
-    V2        OBJ       -3.5
-    V2        C1        2
-    V2        C2        4
-    V2        C3        6
+    V5        OBJ       1
     MARKER    'MARKER'                 'INTEND'
+    V6        C5        1
+    V7        C5        1
+    V8        C5        1
+    MARKER    'MARKER'                 'INTORG'
+    V9        OBJ       0
+    MARKER    'MARKER'                 'INTEND'
+RHS
+    rhs       C1        1
+    rhs       C2        2
+    rhs       C3        3
+    rhs       C4        4
+    rhs       C5        1
 RANGES
-    RHS       C3        2
+    rhs       C4        1
 BOUNDS
- UP BOUNDS    V1        2
- MI BOUNDS    V1
- PL BOUNDS    V2
- LO BOUNDS    V2        -1
+ FR BOUNDS    V1
+ FR BOUNDS    V2
+ FR BOUNDS    V3
+ FR BOUNDS    V4
+ PL BOUNDS    V5
+ LO BOUNDS    V5        5.5
+ UP BOUNDS    V6        1
+ UP BOUNDS    V7        1
+ UP BOUNDS    V8        1
+ UP BOUNDS    V9        1
 SOS
  S2 SOS1
-    V1        1
-    V2        2
+    V6        1
+    V7        2
+    V8        3
 ENDATA
 """
     io = IOBuffer()
-    writemps(io, [1. 2.; 3. 4.;5. 6.], [-Inf, -1.], [2., Inf], [2.5, 3.5], [-Inf, 1., -1.], [4., 1., 1.], :Max, [:Cont, :Int], SOS[SOS(2, [1,2], [1., 2.])], "TestModel")
+    writemps(io,
+    [
+    1 0 0 0 0 0 0 0 0;
+    0 1 0 0 0 0 0 0 0;
+    0 0 1 0 0 0 0 0 0;
+    0 0 0 1 0 0 0 0 0;
+    0 0 0 0 0 1 1 1 0
+    ],
+    [-Inf, -Inf, -Inf, -Inf, 5.5, 0, 0, 0, 0],
+    [Inf, Inf, Inf, Inf, Inf, 1, 1, 1, 1],
+    [1,0,0,1,-1,0,0,0,0],
+    [-Inf, 2, 3, 4, 1],
+    [1, Inf, 3, 5, 1],
+    :Max,
+    [:Cont, :Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
+    SOS[SOS(2, [6,7,8], [1,2,3])],
+    "TestModel"
+    )
     @fact takebuf_string(io) --> MPSFILE
     close(io)
 end
