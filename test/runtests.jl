@@ -139,6 +139,8 @@ facts("Quad") do
     io = IOBuffer()
     MPSWriter.writequad!(io, sparse([1, 1, 2, 1], [1, 2, 2, 1], [0.5, 1.5, 1, 0.5]))
     @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        2\n    V1       V2        1.5\n    V2       V2        2\n"
+    MPSWriter.writequad!(io, [0.75 0;1.4 1])
+    @fact takebuf_string(io) --> "QMATRIX\n    V1       V1        1.5\n    V2       V1        1.4\n    V2       V2        2\n"
     close(io)
 end
 

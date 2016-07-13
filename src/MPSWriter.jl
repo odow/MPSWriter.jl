@@ -190,8 +190,23 @@ function writequad!{T, Ti}(io::IO, Q::AbstractSparseArray{T, Ti, 2})
     end
 end
 
-function writemps{T, Ti}(io::IO,
-    A,                         # the constraint matrix
+function writequad!{T}(io::IO, Q::AbstractArray{T, 2})
+    println(io, "QMATRIX")
+    for i = 1:size(Q)[2]
+        for j in 1:size(Q)[1]
+            if abs(Q[j, i]) > 1e-10
+                if i==j # diagonal
+                    _println(io, "    V$(rpad(j,7)) V$(rpad(i,7))  ", 2 * Q[j, i])
+                else
+                    _println(io, "    V$(rpad(j,7)) V$(rpad(i,7))  ",     Q[j, i])
+                end
+            end
+        end
+    end
+end
+
+function writemps{T1, T2}(io::IO,
+    A::AbstractArray{T1, 2},   # the constraint matrix
     collb::Vector,             # vector of variable lower bounds
     colub::Vector,             # vector of variable upper bounds
     c::Vector,                 # vector containing variable objective coefficients
@@ -200,7 +215,7 @@ function writemps{T, Ti}(io::IO,
     sense::Symbol,             # model sense
     colcat::Vector,            # constraint types
     sos::Vector{SOS},          # SOS information
-    Q::AbstractSparseArray{T, Ti, 2}, #  Quadratic objectives x' Q x
+    Q::AbstractArray{T2, 2}, #  Quadratic objectives x' Q x
     modelname::AbstractString="MPSWriter_jl"  # MPS model name
 )
     # Max width (8) for names in fixed MPS format
@@ -225,8 +240,12 @@ function writemps{T, Ti}(io::IO,
         writeranges!(io, rowlb, rowub, row_sense)
     end
     writebounds!(io, collb, colub)
-    length(sos) > 0 && writesos!(io, sos, length(collb))
-    length(Q) > 0 && writequad!(io, Q)
+    if length(sos) > 0
+        writesos!(io, sos, length(collb))
+    end
+    if length(Q) > 0
+        writequad!(io, Q)
+    end
     println(io, "ENDATA")
 end
 
