@@ -4,8 +4,7 @@ os:
   - linux
   - osx
 julia:
-  - release
-  - nightly
+  - 0.6
 notifications:
   email: false
 script:
@@ -13,4 +12,4 @@ script:
  - julia -e 'Pkg.clone(pwd()); Pkg.test("MPSWriter"; coverage=true)'
 after_success:
   - echo $TRAVIS_JULIA_VERSION
-  - julia -e 'Pkg.add("Coverage"); cd(Pkg.dir("MPSWriter")); using Coverage; Coveralls.submit(Coveralls.process_folder()); Codecov.submit(Codecov.process_folder())'
+  - julia -e 'Pkg.add("Coverage"); cd(Pkg.dir("MPSWriter")); using Coverage; Codecov.submit(Codecov.process_folder())'
