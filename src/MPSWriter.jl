@@ -5,7 +5,7 @@ module MPSWriter
 immutable SOS
     order::Int
     indices::Vector{Int}
-    weights::Vector
+    weights::Vector{Float64}
 end
 
 function getrowsense{T1 <: Real, T2<: Real}(rowlb::Vector{T1}, rowub::Vector{T2})
