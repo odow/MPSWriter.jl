@@ -1,8 +1,6 @@
-# __precompile__()
+__precompile__()
 
 module MPSWriter
-
-# export writemps, SOS
 
 immutable SOS
     order::Int
