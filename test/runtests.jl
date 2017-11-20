@@ -132,18 +132,13 @@ end
 
 @testset "SOS" begin
     colnames  = ["V$i" for i in 1:4]
-    sos = MPSWriter.SOS(1, [1,2,3], [1.,2.,3.])
-    @test sos.order == 1
-    @test sos.indices == [1,2,3]
-    @test sos.weights == [1., 2., 3.]
-
     io = IOBuffer()
-    MPSWriter.writesos!(io, [MPSWriter.SOS(1, [1,2,3], [1.,3.,2.]), MPSWriter.SOS(2, [1,2,3], [2.,1.,3.])], 3, colnames)
+    MPSWriter.writesos!(io, [(1, [1,2,3], [1.,3.,2.]), (2, [1,2,3], [2.,1.,3.])], 3, colnames)
     s = String(take!(io))
     @test s == "SOS\n S1 SOS1\n    V1        1\n    V2        3\n    V3        2\n S2 SOS2\n    V1        2\n    V2        1\n    V3        3\n"
 
-    @test_throws Exception MPSWriter.writesos!(io, [MPSWriter.SOS(1, [1,2,3], [1.,2.,3.])], 2, colnames)
-    @test_throws Exception MPSWriter.writesos!(io, [MPSWriter.SOS(1, [0,2,3], [1.,2.,3.])], 3, colnames)
+    @test_throws Exception MPSWriter.writesos!(io, [(1, [1,2,3], [1.,2.,3.])], 2, colnames)
+    @test_throws Exception MPSWriter.writesos!(io, [(1, [0,2,3], [1.,2.,3.])], 3, colnames)
 
     close(io)
 end
@@ -227,7 +222,7 @@ ENDATA
     [Inf, Inf, 2.5, 1],
     :Max,
     [:Cont, :Cont, :Cont, :Int, :Cont, :Cont, :Cont, :Bin],
-    MPSWriter.SOS[MPSWriter.SOS(2, [5,6,7], [1,2,3])],
+    MPSWriter.SOS[(2, [5,6,7], [1,2,3])],
     sparse([1,1,2,2], [1,2,1,2], [-2,1.1,1.1,-2], 8,8),
     "TestModel",
     ["V$i" for i in 1:8],

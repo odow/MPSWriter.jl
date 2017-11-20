@@ -2,11 +2,8 @@ __precompile__()
 
 module MPSWriter
 
-immutable SOS
-    order::Int
-    indices::Vector{Int}
-    weights::Vector{Float64}
-end
+# order, indices, weights
+const SOS = Tuple{Int, Vector{Int}, Vector{Float64}}
 
 function getrowsense{T1 <: Real, T2<: Real}(rowlb::Vector{T1}, rowub::Vector{T2})
     @assert length(rowlb) == length(rowub)
@@ -163,11 +160,14 @@ end
 function writesos!(io::IO, sos::Vector{SOS}, maxvarindex::Int, colnames::Vector{String})
     println(io, "SOS")
     for i=1:length(sos)
-        @assert length(sos[i].indices) == length(sos[i].weights)
-        println(io, " S$(sos[i].order) SOS$i")
-        for j=1:length(sos[i].indices)
-            @assert sos[i].indices[j] > 0 && sos[i].indices[j] <= maxvarindex
-            _println(io, "    $(rpad(colnames[sos[i].indices[j]], 8))  ", sos[i].weights[j])
+        order   = sos[i][1]
+        indices = sos[i][2]
+        weights = sos[i][3]
+        @assert length(indices) == length(weights)
+        println(io, " S$(order) SOS$i")
+        for (idx, weight) in zip(indices, weights)
+            @assert idx > 0 && idx <= maxvarindex
+            _println(io, "    $(rpad(colnames[idx], 8))  ", weight)
         end
     end
 end
