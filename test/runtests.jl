@@ -153,7 +153,7 @@ end
     close(io)
 end
 
-@testset "writemps" begin
+@testset "write" begin
 const MPSFILE = """NAME          TestModel
 ROWS
  N  OBJ
@@ -208,7 +208,7 @@ QMATRIX
 ENDATA
 """
     io = IOBuffer()
-    MPSWriter.writemps(io,
+    MPSWriter.write(io,
     [
     1 0 0 0 0 0 0 0;
     0 1 0 0 0 0 0 0;
