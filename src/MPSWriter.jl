@@ -200,7 +200,7 @@ function writequad!(io::IO, Q::AbstractMatrix, sense::Symbol, colnames::Vector{S
     end
 end
 
-function writemps(io::IO,
+function write(io::IO,
     A::AbstractMatrix,       # the constraint matrix
     collb::Vector,  # vector of variable lower bounds
     colub::Vector,  # vector of variable upper bounds

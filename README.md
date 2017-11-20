@@ -21,7 +21,7 @@ http://docs.mosek.com/7.1/capi/The_MPS_file_format.html
 It has a single, user-facing, un-exported function.
 
 ```julia
-MPSWriter.writemps(io::IO,
+MPSWriter.write(io::IO,
     A::AbstractMatrix,       # the constraint matrix
     collb::Vector,           # vector of variable lower bounds
     colub::Vector,           # vector of variable upper bounds
@@ -30,7 +30,7 @@ MPSWriter.writemps(io::IO,
     rowub::Vector,           # constraint upper bounds
     sense::Symbol,           # model sense
     colcat::Vector{Symbol},  # constraint types
-    sos::Vector{MPSWriter.SOS},        # SOS information
+    sos::Vector{Tuple{Int, Vector{Int}, Vector{Float64}}}, # SOS information (order, indices, weights)
     Q::AbstractMatrix,       #  Quadratic objective 0.5 * x' Q x
     modelname::AbstractString = "MPSWriter_jl",  # MPS model name
     colnames::Vector{String}  = ["V$i" for i in 1:length(c)],    # variable names
@@ -43,15 +43,8 @@ Limitations:
  - Only Integer (colcat = `:Int`), Binary (colcat = `:Bin`) and Continuous (colcat = `:Cont`)
     variables are supported.
 
-`MPSWriter.SOS` is the immutable type
-```julia
-immutable SOS
-    order::Int
-    indices::Vector{Int}
-    weights::Vector{Float64}
-end
-```
-where the `order` is either `1` (for SOS of type I) or `2` (for SOS of type II).
-The `indices` are a list of the indices of the columns in the constraint matrix
-corresponding to the variables in the SOS set. `weights`defines an ordering on
+SOS are given by the Tuple `Tuple{Int, Vector{Int}, Vector{Float64}}`
+where the first index is either `1` (for SOS of type I) or `2` (for SOS of type II).
+The second index a list of the indices of the columns in the constraint matrix
+corresponding to the variables in the SOS set. The third index defines an ordering on
 the indices.
